@@ -6,6 +6,7 @@ project untouched. The Nordic SDK is downloaded/patched by this repository's
 existing CMake setup before this script runs.
 """
 import argparse
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -141,8 +142,10 @@ def main() -> None:
     if args.prepare_only:
         return
 
+    env = os.environ.copy()
+    env["CFLAGS"] = "-DAPP_VERSION_MAJOR=1 -DAPP_VERSION_MINOR=0 -DAPP_VERSION_PATCH=0"
     subprocess.run([args.make, "-C", str(armgcc), "-j", str(args.jobs)],
-                   check=True)
+                   env=env, check=True)
     application = armgcc / "_build" / "nrf52840_xxaa.hex"
     sd_candidates = list((sdk / "components" / "softdevice" / "s140" / "hex").glob(
         "s140_nrf52_6.1.1_softdevice.hex"))
