@@ -34,7 +34,14 @@ static void holyiot_21017_fem_gpio_init(void)
 
 static void holyiot_21017_fem_enable_if_ready(void)
 {
-    if (m_holyiot_fem_ready || m_holyiot_fem_error || !nrf_sdh_is_enabled())
+    if (!nrf_sdh_is_enabled())
+    {
+        /* The host can close and reopen the BLE stack without a USB reboot. */
+        m_holyiot_fem_ready = false;
+        m_holyiot_fem_error = false;
+        return;
+    }
+    if (m_holyiot_fem_ready || m_holyiot_fem_error)
     {
         return;
     }
