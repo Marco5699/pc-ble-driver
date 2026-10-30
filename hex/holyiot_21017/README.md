@@ -65,6 +65,37 @@ for SWD workflows. **Neither HEX is a USB DFU package**. A DFU ZIP has to
 match your bootloader's format, application flash address, security
 requirements/signature, SoftDevice requirements and application version.
 
+
+## BLE Standalone 4.0.4 / SoftDevice API 5
+
+The Nordic Bluetooth Low Energy Standalone 4.0.4 bundled connectivity image
+uses **SoftDevice API v5** (historically `ble-connectivity 4.1.4`).
+If the log reports API v5, test this separate build rather than the original
+S140/API v6 image:
+
+```sh
+cmake --build build --target compile_holyiot_21017_api5
+```
+
+Produces:
+
+```
+hex/sd_api_v5/holyiot_21017/
+  holyiot_21017_usb_s132_5.1.0_application.hex
+  holyiot_21017_usb_s132_5.1.0_sd_app.hex
+```
+
+This follows the patched SDK's nRF52840 / S132 API 5 USB project. The
+external FEM pins remain TXEN P0.24 and RXEN P0.22. USB Connectivity is
+**not the same** as a Windows-native HCI Bluetooth adapter.
+
+**The version shown in a PC tool may reflect its firmware registry/expected
+image, not definitively the image currently running on a custom bootloader.**
+Validate the actual flash/application/SoftDevice before overwriting anything.
+This API5 build has passed ARM GCC compilation and HEX merge but has not been
+validated on physical HolyIOT 21017 hardware. As with API6, neither HEX is a
+signed USB DFU update package.
+
 ## RF behavior
 
 - TXEN and RXEN are both low at startup.
