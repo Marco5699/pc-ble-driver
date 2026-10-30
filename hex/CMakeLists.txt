@@ -364,6 +364,19 @@ function(nrf_create_compile_targets CONNECTIVITY_ARTIFACTS)
             COMMENT "Building HolyIOT 21017 USB S140 connectivity (separate board)"
             VERBATIM
         )
+
+        # nRF Connect BLE Standalone 4.0.4 uses SoftDevice API v5.
+        add_custom_target(compile_holyiot_21017_api5
+            COMMAND "${HOLYIOT_21017_PYTHON}"
+                "${CMAKE_SOURCE_DIR}/hex/holyiot_21017/build.py"
+                --sdk-root "${SDK_V15_PATH}"
+                --sd-api 5
+                --output-dir "${CMAKE_SOURCE_DIR}/hex/sd_api_v5/holyiot_21017"
+                --make "${MAKE}"
+                --mergehex "${MERGEHEX}"
+            COMMENT "Building HolyIOT 21017 USB S132 API5 for BLE Standalone"
+            VERBATIM
+        )
     else()
         message(WARNING "Python not found: compile_holyiot_21017 target unavailable.")
     endif()
