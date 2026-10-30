@@ -87,13 +87,20 @@ def single_replace(source: str, before: str, after: str) -> str:
     return source.replace(before, after, 1)
 
 
-def prepare(sdk: Path) -> Path:
+def prepare(sdk: Path, api: int = 6) -> Path:
     root = sdk / "examples" / "connectivity" / "ble_connectivity"
-    stock = root / "pca10059" / "ser_s140_usb_hci"
-    custom = root / "pca10060" / "ser_s140_usb_hci"
+    if api == 5:
+        # Patched nRF5 SDK 15.3.0 provides nRF52840 + S132 v5 here.
+        stock = root / "pca10056" / "ser_s132v5_usb_hci"
+        custom = root / "pca10060" / "ser_s132v5_usb_hci"
+    elif api == 6:
+        stock = root / "pca10059" / "ser_s140_usb_hci"
+        custom = root / "pca10060" / "ser_s140_usb_hci"
+    else:
+        raise ValueError("Only SoftDevice APIs 5 and 6 are supported")
     main_path = root / "main.c"
     if not stock.is_dir() or not main_path.is_file():
-        raise RuntimeError("SDK 15.3 is missing its patched PCA10059 USB/S140 project: " +
+        raise RuntimeError("SDK 15.3 is missing its patched nRF52840 USB project: " +
                            str(stock))
     # Always regenerate from the untouched stock project. This also avoids
     # accidentally mixing different SDK versions in a reused TMP directory.
@@ -135,9 +142,10 @@ def main() -> None:
     parser.add_argument("--prepare-only", action="store_true",
                         help="Prepare isolated SDK project without building")
     parser.add_argument("--jobs", type=int, default=2)
+    parser.add_argument("--sd-api", type=int, choices=[5, 6], default=6)
     args = parser.parse_args()
     sdk = args.sdk_root.resolve()
-    armgcc = prepare(sdk)
+    armgcc = prepare(sdk, args.sd_api)
     print("Prepared independent HolyIOT 21017 project:", armgcc)
     if args.prepare_only:
         return
@@ -147,15 +155,17 @@ def main() -> None:
     subprocess.run([args.make, "-C", str(armgcc), "-j", str(args.jobs)],
                    env=env, check=True)
     application = armgcc / "_build" / "nrf52840_xxaa.hex"
-    sd_candidates = list((sdk / "components" / "softdevice" / "s140" / "hex").glob(
-        "s140_nrf52_6.1.1_softdevice.hex"))
+    sd_name, sd_version = ("s132", "5.1.0") if args.sd_api == 5 else ("s140", "6.1.1")
+    sd_file = f"{sd_name}_nrf52_{sd_version}_softdevice.hex"
+    sd_candidates = list((sdk / "components" / "softdevice" / sd_name / "hex").glob(sd_file))
     if not application.is_file() or len(sd_candidates) != 1:
-        raise RuntimeError("Missing application or S140 v6.1.1 SoftDevice HEX")
+        raise RuntimeError("Missing application or " + sd_file)
 
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    app_out = output / "holyiot_21017_usb_s140_6.1.1_application.hex"
-    merged = output / "holyiot_21017_usb_s140_6.1.1_sd_app.hex"
+    prefix = f"holyiot_21017_usb_{sd_name}_{sd_version}"
+    app_out = output / f"{prefix}_application.hex"
+    merged = output / f"{prefix}_sd_app.hex"
     shutil.copyfile(application, app_out)
     subprocess.run([args.mergehex, "-m", str(app_out), str(sd_candidates[0]),
                     "-o", str(merged)], check=True)
