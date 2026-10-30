@@ -1,0 +1,24 @@
+name: HolyIOT 21017 SDK overlay smoke
+
+on:
+  push:
+    branches: [feat/holyiot-21017-connectivity]
+  pull_request:
+    paths:
+      - 'hex/holyiot_21017/**'
+      - 'hex/CMakeLists.txt'
+      - 'test/test_holyiot_21017.py'
+      - '.github/workflows/holyiot-21017-check.yml'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check Python syntax
+        run: python -m py_compile hex/holyiot_21017/build.py test/test_holyiot_21017.py
+      - name: Test isolated SDK project generation
+        run: python -m unittest discover -s test -p 'test_holyiot_21017.py' -v
