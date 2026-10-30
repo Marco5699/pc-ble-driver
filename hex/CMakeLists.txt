@@ -356,9 +356,9 @@ function(nrf_create_compile_targets CONNECTIVITY_ARTIFACTS)
     if(HOLYIOT_21017_PYTHON)
         add_custom_target(compile_holyiot_21017
             COMMAND "${HOLYIOT_21017_PYTHON}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/holyiot_21017/build.py"
+                "${CMAKE_SOURCE_DIR}/hex/holyiot_21017/build.py"
                 --sdk-root "${SDK_V15_PATH}"
-                --output-dir "${CMAKE_CURRENT_SOURCE_DIR}/sd_api_v6/holyiot_21017"
+                --output-dir "${CMAKE_SOURCE_DIR}/hex/sd_api_v6/holyiot_21017"
                 --make "${MAKE}"
                 --mergehex "${MERGEHEX}"
             COMMENT "Building HolyIOT 21017 USB S140 connectivity (separate board)"
