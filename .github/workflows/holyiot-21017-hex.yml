@@ -76,17 +76,21 @@ jobs:
         run: |
           cmake --build build --target compile_holyiot_21017 -j 2
           ls -lah hex/sd_api_v6/holyiot_21017/
+          cmake --build build --target compile_holyiot_21017_api5 -j 2
+          ls -lah hex/sd_api_v5/holyiot_21017/
       - uses: actions/upload-artifact@v4
         with:
           name: holyiot-21017-ble-connectivity-hex
-          path: hex/sd_api_v6/holyiot_21017/*.hex
+          path: |
+            hex/sd_api_v6/holyiot_21017/*.hex
+            hex/sd_api_v5/holyiot_21017/*.hex
           if-no-files-found: error
       - name: Publish compiled HEX to current branch
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f hex/sd_api_v6/holyiot_21017/*.hex
+          git add -f hex/sd_api_v6/holyiot_21017/*.hex hex/sd_api_v5/holyiot_21017/*.hex
           if ! git diff --cached --quiet; then
             git commit -m "build: publish compiled HolyIOT 21017 connectivity HEX"
             git push origin HEAD:feat/holyiot-21017-connectivity
