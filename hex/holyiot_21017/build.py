@@ -158,6 +158,11 @@ def main() -> None:
     sd_name, sd_version = ("s132", "5.1.0") if args.sd_api == 5 else ("s140", "6.1.1")
     sd_file = f"{sd_name}_nrf52_{sd_version}_softdevice.hex"
     sd_candidates = list((sdk / "components" / "softdevice" / sd_name / "hex").glob(sd_file))
+    if args.sd_api == 5 and not sd_candidates:
+        # SDK 15.3 includes S132 5.0.0, while pc-ble-driver uses its
+        # packaged, newer S132 5.1.0 hex (same SoftDevice API major).
+        sd_candidates = [Path(__file__).resolve().parents[1] / "sd_api_v5" / sd_file]
+        sd_candidates = [p for p in sd_candidates if p.is_file()]
     if not application.is_file() or len(sd_candidates) != 1:
         raise RuntimeError("Missing application or " + sd_file)
 
