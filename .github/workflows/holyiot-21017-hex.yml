@@ -1,0 +1,97 @@
+name: Build HolyIOT 21017 HEX
+
+on:
+  push:
+    branches: [feat/holyiot-21017-connectivity]
+    paths:
+      - '.github/workflows/holyiot-21017-hex.yml'
+      - 'hex/holyiot_21017/build.py'
+      - 'hex/CMakeLists.txt'
+      - 'hex/nRF5_SDK_15.3.0_connectivity.patch'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      TMP: /tmp
+      GCCARMEMB_TOOLCHAIN_PATH: ${{ github.workspace }}/.toolchains/gcc-arm-none-eabi-7-2018-q2-update
+      GNUARMEMB_TOOLCHAIN_PATH: ${{ github.workspace }}/.toolchains/gcc-arm-none-eabi-7-2018-q2-update
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native tools and legacy GNU Arm GCC 7.3.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq make cmake git python3-pip curl bzip2 libasio-dev
+          mkdir -p .toolchains .cache
+          curl -fL --retry 3 --retry-delay 5 \
+            https://developer.arm.com/-/media/Files/downloads/gnu-rm/7-2018q2/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2 \
+            -o /tmp/arm-gcc.tar.bz2
+          tar -xf /tmp/arm-gcc.tar.bz2 -C .toolchains
+          "${GCCARMEMB_TOOLCHAIN_PATH}/bin/arm-none-eabi-gcc" -dumpversion
+
+      - name: Install mergehex shim for build (Intel HEX merger)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install 'intelhex==2.3.0'
+          mkdir -p /tmp/holytools
+          cat > /tmp/holytools/mergehex <<'PY'
+          #!/usr/bin/env python3
+          import argparse
+          from intelhex import IntelHex
+          p=argparse.ArgumentParser()
+          p.add_argument('-m', nargs='+', required=True)
+          p.add_argument('-o', required=True)
+          args=p.parse_args()
+          merged=IntelHex()
+          for f in args.m:
+              merged.merge(IntelHex(f), overlap='error')
+          merged.write_hex_file(args.o)
+          PY
+          cat > /tmp/holytools/nrfutil <<'SH'
+          #!/bin/sh
+          echo "nrfutil placeholder; no Nordic DFU packages are built for HolyIOT" >&2
+          exit 1
+          SH
+          chmod +x /tmp/holytools/mergehex /tmp/holytools/nrfutil
+          echo "/tmp/holytools" >> "$GITHUB_PATH"
+      - name: Configure patched nRF5 SDK
+        shell: bash
+        run: |
+          cmake -S . -B build -DCOMPILE_CONNECTIVITY=ON -DCONNECTIVITY_VERSION=1.0.0 -DDISABLE_TESTS=ON -DDISABLE_EXAMPLES=ON
+      - name: Compile HolyIOT 21017 firmware
+        shell: bash
+        run: |
+          cmake --build build --target compile_holyiot_21017 -j 2
+          ls -lah hex/sd_api_v6/holyiot_21017/
+          cmake --build build --target compile_holyiot_21017_api5 -j 2
+          ls -lah hex/sd_api_v5/holyiot_21017/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: holyiot-21017-ble-connectivity-hex
+          path: |
+            hex/sd_api_v6/holyiot_21017/*.hex
+            hex/sd_api_v5/holyiot_21017/*.hex
+          if-no-files-found: error
+      - name: Publish compiled HEX to current branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f hex/sd_api_v6/holyiot_21017/*.hex hex/sd_api_v5/holyiot_21017/*.hex
+          if ! git diff --cached --quiet; then
+            git commit -m "build: publish compiled HolyIOT 21017 connectivity HEX"
+            git push origin HEAD:feat/holyiot-21017-connectivity
+          fi
