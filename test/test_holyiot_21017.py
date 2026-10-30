@@ -30,7 +30,7 @@ class BuildHelperTest(unittest.TestCase):
                       '}\n')
             (project / "main.c").write_text(source, encoding="utf-8")
             result = mod.prepare(sdk)
-            self.assertEqual(result.parent.parent.parent.name, "ser_s140_usb_hci")
+            self.assertEqual(result.parent.name, "ser_s140_usb_hci")
             self.assertEqual(makefile.read_text(encoding="utf-8"),
                              "SRC_FILES += $(PROJ_DIR)/main.c \\\n")
             self.assertIn("main_holyiot_21017.c",
