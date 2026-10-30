@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 35
     env:
-      TMP: ${{ runner.temp }}
+      TMP: /tmp
       GCCARMEMB_TOOLCHAIN_PATH: ${{ github.workspace }}/.toolchains/gcc-arm-none-eabi-7-2018-q2-update
       GNUARMEMB_TOOLCHAIN_PATH: ${{ github.workspace }}/.toolchains/gcc-arm-none-eabi-7-2018-q2-update
     steps:
