@@ -350,6 +350,24 @@ function(nrf_create_compile_targets CONNECTIVITY_ARTIFACTS)
         CONNECTIVITY_ARTIFACTS _CONNECTIVITY_SDK_VERSION_15_ARTIFACTS
     )
 
+    # Independent PCA10059-derived project for HolyIOT 21017 (nRF52840,
+    # external two-control-pin FEM). This is deliberately opt-in.
+    find_program(HOLYIOT_21017_PYTHON NAMES python3 python)
+    if(HOLYIOT_21017_PYTHON)
+        add_custom_target(compile_holyiot_21017
+            COMMAND "${HOLYIOT_21017_PYTHON}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/holyiot_21017/build.py"
+                --sdk-root "${SDK_V15_PATH}"
+                --output-dir "${CMAKE_CURRENT_SOURCE_DIR}/sd_api_v6/holyiot_21017"
+                --make "${MAKE}"
+                --mergehex "${MERGEHEX}"
+            COMMENT "Building HolyIOT 21017 USB S140 connectivity (separate board)"
+            VERBATIM
+        )
+    else()
+        message(WARNING "Python not found: compile_holyiot_21017 target unavailable.")
+    endif()
+
     add_custom_target("compile_connectivity" DEPENDS ${CONNECTIVITY_BUILD_TARGETS})
 
     set(_CONNECTIVITY_ARTIFACTS)
